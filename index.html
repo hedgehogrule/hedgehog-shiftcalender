@@ -6,11 +6,14 @@
     <title>我的全自動夢幻行事曆</title>
     <style>
         :root {
-            --sat-color: #6daae0; 
-            --sun-color: #ef9c66; 
+            --sat-color: #5b9bd5; 
+            --sun-color: #ed7d31; 
             --dreamy-bg: linear-gradient(135deg, #ffe0f0 0%, #e0f7fa 50%, #e6d9ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            
+            --cycle-a-bg: rgba(255, 230, 238, 0.85);
+            --cycle-a-border: rgba(255, 174, 195, 0.5);
+            --cycle-b-bg: rgba(225, 242, 255, 0.85);
+            --cycle-b-border: rgba(153, 201, 255, 0.5);
         }
         
         body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0 0 20px 0; background: var(--dreamy-bg); background-attachment: fixed; min-height: 100vh; user-select: none; color: #444; }
@@ -21,66 +24,55 @@
         
         .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: rgba(255, 255, 255, 0.6); border-radius: 12px; margin: 0 8px 8px 8px; color: #666; text-align: center; font-size: 13px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .weekdays div { padding: 8px 0; }
-        .weekdays div:nth-child(6) { color: var(--sat-color); } 
-        .weekdays div:nth-child(7) { color: var(--sun-color); } 
+        .weekdays div:nth-child(6) { color: #5b9bd5; } 
+        .weekdays div:nth-child(7) { color: #ed7d31; } 
         
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 0 8px; }
         
-        .day { background: var(--card-bg); backdrop-filter: blur(3px); min-height: 100px; padding: 4px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s ease; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid rgba(255,255,255,0.4); box-sizing: border-box; }
-        .day:active { transform: scale(0.96); background: rgba(255,255,255,1); }
+        .day { backdrop-filter: blur(3px); min-height: 100px; padding: 4px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s ease; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); box-sizing: border-box; }
+        .day:active { transform: scale(0.96); background: rgba(255, 255, 255, 1) !important; }
         .day.empty { background: transparent; box-shadow: none; border: none; cursor: default; }
+        
+        .day.cycle-even { background: var(--cycle-a-bg); border: 1px solid var(--cycle-a-border); }
+        .day.cycle-odd { background: var(--cycle-b-bg); border: 1px solid var(--cycle-b-border); }
         
         .date-number { font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-left: 2px; color: #666; display: flex; justify-content: space-between; align-items: center; }
         .manual-dot { width: 6px; height: 6px; background-color: #ff6b6b; border-radius: 50%; display: inline-block; margin-left: 4px; }
-        .sat-text { color: var(--sat-color); }
+        .sat-text { color: #4183c4; }
         .sun-text { color: #d9534f; }
         
-        .week-badge { font-size: 9px; background: linear-gradient(135deg, #e0f7fa 0%, #e6d9ff 100%); color: #7a6baf; border: 1px solid #dcd0ff; border-radius: 6px; padding: 1px 3px; white-space: nowrap; font-weight: bold; }
+        .badge-container { display: flex; gap: 3px; align-items: center; }
+        .week-badge { font-size: 9px; background: linear-gradient(135deg, #ffffff 0%, #e6d9ff 100%); color: #7a6baf; border: 1px solid #dcd0ff; border-radius: 6px; padding: 1px 3px; white-space: nowrap; font-weight: bold; }
+        .cycle-start-badge { font-size: 9px; background: #ff6b81; color: white; border-radius: 6px; padding: 1px 4px; white-space: nowrap; font-weight: bold; box-shadow: 0 1px 3px rgba(255,107,129,0.3); }
         
-        /* --- 全新班表膠囊標籤樣式 --- */
-        .shift-badge {
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-            padding: 3px 6px;
-            margin: 2px auto 4px auto;
-            width: 90%;
-            max-width: 65px;
-            box-sizing: border-box;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        }
-        /* OFF 班別：夢幻紫 */
+        .shift-badge { font-size: 11px; font-weight: bold; text-align: center; padding: 3px 6px; margin: 2px auto 4px auto; width: 95%; max-width: 68px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
         .shift-off { background: #b6a4e3; color: white; border: none; border-radius: 14px; box-shadow: 0 2px 4px rgba(182, 164, 227, 0.4); max-width: fit-content; padding: 2px 9px; }
-        /* D 開頭：以白色為主、細緻灰框 */
         .shift-d { background: #ffffff; color: #444444; border: 1px solid #ccd0d5; border-radius: 8px; }
-        /* 12、E、N 開頭：顯眼夢幻綠色 */
         .shift-green { background: #5ece9d; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(94, 206, 157, 0.3); }
-        /* 其他班別（如 8-4 1）：輕灰色標籤 */
         .shift-default { background: #e9ecef; color: #555555; border: 1px solid #dee2e6; border-radius: 8px; }
         
         .event-item { font-size: 11px; background: rgba(91, 155, 213, 0.1); border-left: 3px solid #84bde3; padding: 3px 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #3e6e96; border-radius: 0 4px 4px 0; }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(220, 210, 230, 0.5); backdrop-filter: blur(6px); justify-content: center; align-items: center; z-index: 10; }
-        .modal-content { background: rgba(255, 255, 255, 0.95); padding: 25px; width: 88%; max-width: 400px; border-radius: 20px; box-shadow: 0 15px 35px rgba(100,80,120,0.2); box-sizing: border-box; border: 1px solid rgba(255,255,255,0.5); }
-        .modal h3 { margin-top: 0; margin-bottom: 10px; font-size: 19px; color: #555; text-align: center; }
-        .modal-subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-content { background: rgba(255, 255, 255, 0.95); padding: 20px 15px; width: 92%; max-width: 440px; border-radius: 20px; box-shadow: 0 15px 35px rgba(100,80,120,0.2); box-sizing: border-box; border: 1px solid rgba(255,255,255,0.5); max-height: 88vh; overflow-y: auto; }
+        .modal h3 { margin-top: 0; margin-bottom: 5px; font-size: 19px; color: #555; text-align: center; }
+        .modal-subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         
-        .input-group { margin-bottom: 18px; }
+        .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 13px; margin-bottom: 6px; font-weight: bold; color: #777; }
-        .input-group input { width: 100%; padding: 13px; font-size: 16px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: #fafafa; }
+        .input-group input { width: 100%; padding: 11px; font-size: 16px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: #fafafa; }
         .input-group input:focus { outline: none; border-color: #b6a4e3; background: white; }
         
-        .quick-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .quick-btn { background: white; border: 1px solid #84bde3; border-radius: 12px; padding: 6px 12px; font-size: 14px; font-weight: bold; color: #5b9bd5; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.1s; }
-        .quick-btn:active { transform: scale(0.9); background: #e0f7fa; }
-        .quick-btn-off { border-color: #b6a4e3; color: #a28cdb; }
-        .quick-btn-clear { border-color: #ddd; color: #999; }
+        .quick-section { margin-top: 12px; border-top: 1px dashed #eee; padding-top: 8px; }
+        .quick-section:first-of-type { border-top: none; padding-top: 0; }
+        .section-title { font-size: 11px; color: #999; font-weight: bold; margin-bottom: 6px; padding-left: 2px; }
+        .quick-options { display: flex; flex-wrap: wrap; gap: 6px; }
         
-        .btn-save { background: linear-gradient(135deg, #a28cdb 0%, #84bde3 100%); color: white; box-shadow: 0 3px 8px rgba(162, 140, 219, 0.3); }
-        .btn-cancel { background: #f1f1f1; color: #666; margin-right: 12px;}
+        .quick-btn { background: white; border: 1px solid #ccd0d5; border-radius: 8px; padding: 5px 9px; font-size: 13px; font-weight: bold; color: #555; cursor: pointer; transition: all 0.1s; }
+        .quick-btn:active { transform: scale(0.9); background: #f0f0f0; }
+        .quick-btn-green { border-color: #5ece9d; color: #3ba377; }
+        .quick-btn-off { border-color: #b6a4e3; color: #8d77c4; background: #fdfbff; }
+        .quick-btn-clear { border-color: #ff6b6b; color: #ff6b6b; background: #fff5f5; }
     </style>
 </head>
 <body>
@@ -101,73 +93,115 @@
         <div class="modal-content">
             <h3 id="modalTitle"></h3>
             <div class="modal-subtitle" id="modalSubtitle"></div>
+            
             <div class="input-group">
-                <label>班別 (空白則恢復為系統自動排班)</label>
-                <input type="text" id="shiftInput" placeholder="輸入或點選下方按鈕">
-                <div class="quick-options">
-                    <button class="quick-btn" onclick="setShift('D')">D</button>
-                    <button class="quick-btn" onclick="setShift('12-8 1')">12-8 1</button>
-                    <button class="quick-btn" onclick="setShift('8-4 1')">8-4 1</button>
-                    <button class="quick-btn" onclick="setShift('N1')">N1</button>
-                    <button class="quick-btn" onclick="setShift('E1')">E1</button>
-                    <button class="quick-btn quick-btn-off" onclick="setShift('OFF')">OFF</button>
-                    <button class="quick-btn quick-btn-clear" onclick="setShift('')">清空</button>
+                <label>班別</label>
+                <input type="text" id="shiftInput" placeholder="請點選下方快捷鍵填入">
+                
+                <div class="quick-section">
+                    <div class="section-title">D 班系列 (白底標籤)</div>
+                    <div class="quick-options">
+                        <button class="quick-btn" onclick="setShift('D')">D</button>
+                        <button class="quick-btn" onclick="setShift('D1')">D1</button>
+                        <button class="quick-btn" onclick="setShift('D2')">D2</button>
+                        <button class="quick-btn" onclick="setShift('D3')">D3</button>
+                        <button class="quick-btn" onclick="setShift('D4')">D4</button>
+                        <button class="quick-btn" onclick="setShift('D5')">D5</button>
+                        <button class="quick-btn" onclick="setShift('D6')">D6</button>
+                        <button class="quick-btn" onclick="setShift('D7')">D7</button>
+                        <button class="quick-btn" onclick="setShift('D8')">D8</button>
+                        <button class="quick-btn" onclick="setShift('D9')">D9</button>
+                        <button class="quick-btn" onclick="setShift('D10')">D10</button>
+                        <button class="quick-btn" onclick="setShift('D11')">D11</button>
+                        <button class="quick-btn" onclick="setShift('D12')">D12</button>
+                        <button class="quick-btn" onclick="setShift('D13')">D13</button>
+                        <button class="quick-btn" onclick="setShift('DB1')">DB1</button>
+                    </div>
+                </div>
+
+                <div class="quick-section">
+                    <div class="section-title">12 班系列 (綠底標籤)</div>
+                    <div class="quick-options">
+                        <button class="quick-btn quick-btn-green" onclick="setShift('12-8 1')">12-8 1</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('12-8 2')">12-8 2</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('12-8 3')">12-8 3</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('12-8 4')">12-8 4</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('12-8 5')">12-8 5</button>
+                    </div>
+                </div>
+
+                <div class="quick-section">
+                    <div class="section-title">E / N 班系列 (綠底標籤)</div>
+                    <div class="quick-options">
+                        <button class="quick-btn quick-btn-green" onclick="setShift('E1')">E1</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('E2')">E2</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('E3')">E3</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('E4')">E4</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('N1')">N1</button>
+                        <button class="quick-btn quick-btn-green" onclick="setShift('N2')">N2</button>
+                    </div>
+                </div>
+
+                <div class="quick-section">
+                    <div class="section-title">放假 / 其他</div>
+                    <div class="quick-options">
+                        <button class="quick-btn quick-btn-off" onclick="setShift('OFF')">OFF</button>
+                        <button class="quick-btn quick-btn-off" onclick="setShift('D\'OFF')">D'OFF</button>
+                        <button class="quick-btn quick-btn-off" onclick="setShift('OFF.B')">OFF.B</button>
+                        <button class="quick-btn" onclick="setShift('9-5訪')">9-5訪</button>
+                        <button class="quick-btn quick-btn-clear" onclick="setShift('')">重置清空</button>
+                    </div>
                 </div>
             </div>
-            <div class="input-group" style="margin-bottom: 22px;">
+            
+            <div class="input-group" style="margin-bottom: 20px;">
                 <label>行程 / 記事</label>
                 <input type="text" id="eventInput" placeholder="例如: 洗車、聚餐">
             </div>
             <div class="btn-row" style="display:flex;">
-                <button class="btn btn-cancel" style="flex:1; padding:14px; border:none; border-radius:10px; font-weight:bold;" onclick="closeModal()">取消</button>
-                <button class="btn btn-save" style="flex:1; padding:14px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;" onclick="saveData()">儲存</button>
+                <button class="btn btn-cancel" style="flex:1; padding:12px; border:none; border-radius:10px; font-weight:bold; background:#f1f1f1; color:#666; margin-right:12px;" onclick="closeModal()">取消</button>
+                <button class="btn btn-save" style="flex:1; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; background: linear-gradient(135deg, #a28cdb 0%, #84bde3 100%); color:white;" onclick="saveData()">儲存</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- 最新版：真實的 34 週班表資料庫 (8-4 1自動轉D1, 8-4 2轉D2) ---
         const shiftPatterns = [
-            ["8-4 2", "D", "8'-16' 5", "D", "D7", "OFF", "N2"],     // 01
-            ["N1", "N2", "OFF", "OFF", "N2", "N1", "OFF"],          // 02
-            ["E3", "E3", "E3", "E3", "E3", "OFF", "E1"],            // 03
-            ["E4", "E4", "E4", "E4", "E4", "OFF", "OFF"],           // 04
-            ["D10", "D8", "8-4 2", "D", "D4", "D1", "OFF"],         // 05
-            ["E1", "E1", "E1", "E1", "E1", "OFF", "N1"],            // 06
-            ["N2", "N1", "N1", "N2", "OFF", "OFF", "OFF"],          // 07
-            ["D4", "D6", "D", "D10", "D3", "OFF", "OFF"],           // 08
-            ["E2", "E2", "E2", "E2", "E2", "E2", "OFF"],            // 09
-            ["8'-16' 5", "D", "D6", "8-4 2", "DB1", "D2", "OFF"],   // 10
-            ["DB1", "D7", "8-4 1", "D8", "8'-16' 5", "OFF", "OFF"], // 11
-            ["D3", "DB1", "N2", "N1", "N1", "N2", "OFF"],           // 12
-            ["OFF", "D10", "D3", "D7", "8-4 1", "OFF", "OFF"],      // 13
+            ["D9", "D", "D5", "D5", "D7", "OFF", "N2"],     // 01
+            ["N1", "N2", "OFF", "OFF", "N2", "N1", "OFF"],  // 02
+            ["E3", "E3", "E3", "E3", "E3", "OFF", "E1"],    // 03
+            ["E4", "E4", "E4", "E4", "E4", "OFF", "OFF"],   // 04
+            ["D10", "D8", "D2", "D", "D4", "D1", "OFF"],    // 05
+            ["E1", "E1", "E1", "E1", "E1", "OFF", "N1"],    // 06
+            ["N2", "N1", "N1", "N2", "OFF", "OFF", "OFF"],  // 07
+            ["D4", "D6", "D", "D10", "D3", "OFF", "OFF"],   // 08
+            ["E2", "E2", "E2", "E2", "E2", "E2", "OFF"],    // 09
+            ["D5", "D", "D6", "D2", "DB1", "D2", "OFF"],    // 10
+            ["DB1", "D7", "D1", "D8", "D5", "OFF", "OFF"],  // 11
+            ["D3", "DB1", "N2", "N1", "N1", "N2", "OFF"],   // 12
+            ["OFF", "D10", "D3", "D7", "D1", "OFF", "OFF"], // 13
             ["12-8 1", "12-8 2", "12-8 3", "12-8 4", "12-8 5", "OFF", "E2"], // 14
             ["12-8 2", "12-8 3", "12-8 4", "12-8 5", "12-8 1", "OFF", "OFF"],// 15
-            ["D7", "D4", "D9", "DB1", "8-4 2", "OFF", "D2"],        // 16
-            ["D", "D3", "D10", "8-4 1", "D9", "OFF", "OFF"],        // 17
+            ["D7", "D4", "D9", "DB1", "D2", "OFF", "D2"],   // 16
+            ["D", "D3", "D10", "D1", "D9", "OFF", "OFF"],   // 17
             ["12-8 3", "12-8 4", "12-8 5", "12-8 1", "12-8 2", "E1", "OFF"], // 18
             ["12-8 4", "12-8 5", "12-8 1", "12-8 2", "12-8 3", "OFF", "OFF"],// 19
-            ["8-4 1", "D9", "D4", "D9", "D6", "9-5訪", "OFF"],      // 20
-            ["D9", "D", "DB1", "D6", "D8", "OFF", "D1"],            // 21
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 22
-            ["OFF", "OFF", "OFF", "OFF", "OFF", "OFF", "OFF"],      // 23
-            ["D'OFF", "D", "D", "D", "D", "OFF", "OFF"],            // 24
+            ["D1", "D9", "D4", "D9", "D6", "9-5訪", "OFF"],  // 20
+            ["D2", "D5", "DB1", "D6", "D8", "OFF", "D1"],   // 21
+            ["D", "D", "D", "D", "D", "OFF", "OFF"],        // 22
+            ["OFF", "OFF", "OFF", "OFF", "OFF", "OFF", "OFF"], // 23
+            ["D'OFF", "D", "D", "D", "D", "OFF", "OFF"],    // 24
             ["12-8 5", "12-8 1", "12-8 2", "12-8 3", "12-8 4", "OFF", "OFF"],// 25
-            ["D8", "8-4 2", "D7", "D4", "D", "OFF.B", "OFF"],       // 26
-            ["D6", "8-4 1", "D8", "D3", "D10", "D3", "OFF"],        // 27
-            ["D", "8'-16' 5", "D", "8'-16' 5", "D", "OFF", "OFF"],  // 28
-            ["D11", "D11", "D11", "D11", "D11", "OFF", "9-5訪"],    // 29
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 30
-            ["D12", "D12", "D12", "D12", "D12", "OFF", "OFF"],      // 31
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 32
-            ["D", "D", "D", "D", "D", "D4", "OFF"],                 // 33
-            ["D13", "D13", "D13", "D13", "D13", "OFF", "OFF"],      // 34
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 35
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 36
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 37
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 38
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 39
-            ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 40
-            ["D", "D", "D", "D", "D", "OFF", "OFF"]                 // 41
+            ["D8", "D2", "D7", "D4", "D", "OFF.B", "OFF"],  // 26
+            ["D6", "D1", "D8", "D3", "D10", "D3", "OFF"],   // 27
+            ["D", "D", "D", "D", "D", "OFF", "OFF"],        // 28
+            ["D11", "D11", "D11", "D11", "D11", "OFF", "9-5訪"], // 29
+            ["D", "D", "D", "D", "D", "OFF", "OFF"],        // 30
+            ["D12", "D12", "D12", "D12", "D12", "OFF", "OFF"], // 31
+            ["D", "D", "D", "D", "D", "OFF", "OFF"],        // 32
+            ["D", "D", "D", "D", "D", "D4", "OFF"],         // 33
+            ["D13", "D13", "D13", "D13", "D13", "OFF", "OFF"]  // 34
         ];
 
         function getAutoShift(year, month, date) {
@@ -176,6 +210,7 @@
             const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
             const targetMonday = new Date(year, month, date + diffToMonday, 0, 0, 0);
             
+            // 基準日不變：2026-07-06 對應第 14 週 (索引 13)
             const refDate = new Date(2026, 6, 6, 0, 0, 0); 
             const refWeekIdx = 13; 
             
@@ -183,14 +218,32 @@
             const daysDiff = Math.round(msDiff / (1000 * 60 * 60 * 24));
             const weeksDiff = Math.floor(daysDiff / 7);
             
-            let currentWeekIdx = (refWeekIdx + weeksDiff) % 41;
-            if (currentWeekIdx < 0) currentWeekIdx += 41; 
+            // ★ 修改為 34 週循環
+            let currentWeekIdx = (refWeekIdx + weeksDiff) % 34;
+            if (currentWeekIdx < 0) currentWeekIdx += 34; 
             
             const patternDayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             
             return {
                 shift: shiftPatterns[currentWeekIdx][patternDayIdx],
                 weekNumber: currentWeekIdx + 1
+            };
+        }
+
+        function getCycleInfo(year, month, date) {
+            const targetDate = new Date(year, month, date, 12, 0, 0);
+            const refDate = new Date(2026, 5, 8, 12, 0, 0); 
+            
+            const msDiff = targetDate.getTime() - refDate.getTime();
+            const daysDiff = Math.floor(msDiff / (1000 * 60 * 60 * 24));
+            
+            let cycleIdx = Math.floor(daysDiff / 28);
+            let dayInCycle = daysDiff % 28;
+            if (dayInCycle < 0) dayInCycle += 28;
+            
+            return {
+                isEven: Math.abs(cycleIdx) % 2 === 0,
+                isStart: dayInCycle === 0
             };
         }
 
@@ -224,6 +277,7 @@
 
                 const savedData = calendarData[dateKey];
                 const autoInfo = getAutoShift(year, month, i);
+                const cycleInfo = getCycleInfo(year, month, i);
                 
                 let finalShift = "";
                 let isManual = false;
@@ -235,7 +289,6 @@
                     finalShift = autoInfo.shift;
                 }
                 
-                // --- 核心邏輯：根據班別前綴自動歸類標籤顏色 ---
                 let shiftHtml = "";
                 if (finalShift) {
                     const s = finalShift.trim().toUpperCase();
@@ -252,15 +305,24 @@
 
                 let eventHtml = (savedData && savedData.event) ? `<div class="event-item">${savedData.event}</div>` : "";
                 let dotIndicator = isManual && finalShift !== "" ? `<span class="manual-dot"></span>` : ``;
-                let weekBadge = dayOfWeek === 1 ? `<span class="week-badge">${autoInfo.weekNumber}號班</span>` : "";
+                
+                let badgesHtml = "";
+                if (dayOfWeek === 1) {
+                    badgesHtml += `<span class="week-badge">${autoInfo.weekNumber}號班</span>`;
+                }
+                if (cycleInfo.isStart) {
+                    badgesHtml += `<span class="cycle-start-badge">新週期</span>`;
+                }
+
+                let cycleClass = cycleInfo.isEven ? "cycle-even" : "cycle-odd";
 
                 calendarEl.innerHTML += `
-                    <div class="day" onclick="openModal('${dateKey}', '${year}年${month + 1}月${i}日', ${year}, ${month}, ${i})">
+                    <div class="day ${cycleClass}" onclick="openModal('${dateKey}', '${year}年${month + 1}月${i}日', ${year}, ${month}, ${i})">
                         <div class="${dateClass}">
                             <div style="display:flex; align-items:center;">
                                 <span>${i}</span>${dotIndicator}
                             </div>
-                            ${weekBadge}
+                            <div class="badge-container">${badgesHtml}</div>
                         </div>
                         ${shiftHtml}
                         ${eventHtml}
