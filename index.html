@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的專屬班表行事曆</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; user-select: none; }
+        /* 頂部月份控制 */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header button { background: none; border: none; font-size: 20px; font-weight: bold; padding: 5px 15px; cursor: pointer; color: #555; }
+        .header h2 { margin: 0; font-size: 20px; color: #333; }
+        /* 星期標題 */
+        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: #888; color: white; text-align: center; padding: 8px 0; font-size: 13px; }
+        /* 月曆網格 */
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; }
+        .day { background: white; min-height: 90px; padding: 3px; display: flex; flex-direction: column; cursor: pointer; }
+        .day:active { background: #f0f0f0; }
+        .date-number { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+        .sun { color: #d9534f; } /* 星期日紅色 */
+        .sat { color: #5bc0de; } /* 星期六藍色 */
+        /* 班表與行程樣式 */
+        .shift-badge { background: #f8f9fa; border: 1px solid #ccc; font-size: 12px; font-weight: bold; text-align: center; border-radius: 3px; margin-bottom: 3px; padding: 1px; color: #333; }
+        .shift-off { background: #b39ddb; color: white; border: none; border-radius: 10px; width: fit-content; padding: 1px 6px; margin: 0 auto 3px auto; }
+        .event-item { font-size: 11px; background: #e3f2fd; border-left: 3px solid #2196f3; padding: 2px 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333; }
+        /* 編輯彈出視窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10; }
+        .modal-content { background: white; padding: 20px; width: 85%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); box-sizing: border-box; }
+        .modal h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; text-align: center; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .input-group input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .btn-row { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 12px; font-size: 16px; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-save { background: #4caf50; color: white; }
+        .btn-cancel { background: #e0e0e0; color: #333; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button onclick="changeMonth(-1)">&#10094;</button>
+        <h2 id="monthYear"></h2>
+        <button onclick="changeMonth(1)">&#10095;</button>
+    </div>
+
+    <div class="weekdays">
+        <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div><div>週日</div>
+    </div>
+
+    <div class="calendar" id="calendar"></div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">編輯日期</h3>
+            <div class="input-group">
+                <label>班別 (如: D5, OFF, 12N)</label>
+                <input type="text" id="shiftInput" placeholder="輸入班別代號">
+            </div>
+            <div class="input-group">
+                <label>行程 / 記事 (可不填)</label>
+                <input type="text" id="eventInput" placeholder="輸入行程，如: 洗車、段考">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn btn-save" onclick="saveData()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDateString = "";
+        let calendarData = JSON.parse(localStorage.getItem('myCustomCalendar')) || {};
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            document.getElementById('monthYear').innerText = `${year}年 ${month + 1}月`;
+            
+            const calendarEl = document.getElementById('calendar');
+            calendarEl.innerHTML = "";
+
+            // 計算該月第一天是星期幾 (轉為週一為起點)
+            let firstDay = new Date(year, month, 1).getDay();
+            firstDay = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // 補齊前面的空白格子
+            for (let i = 0; i < firstDay; i++) {
+                calendarEl.innerHTML += `<div class="day" style="background:#f9f9f9;"></div>`;
+            }
+
+            // 填寫日期與資料
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateKey = `${year}-${month + 1}-${i}`;
+                const dayOfWeek = new Date(year, month, i).getDay();
+                let dateClass = "date-number";
+                if (dayOfWeek === 0) dateClass += " sun";
+                if (dayOfWeek === 6) dateClass += " sat";
+
+                const data = calendarData[dateKey] || { shift: "", event: "" };
+                
+                let shiftHtml = "";
+                if (data.shift) {
+                    if (data.shift.toUpperCase() === "OFF") {
+                        shiftHtml = `<div class="shift-off">OFF</div>`;
+                    } else {
+                        shiftHtml = `<div class="shift-badge">${data.shift}</div>`;
+                    }
+                }
+
+                let eventHtml = data.event ? `<div class="event-item">${data.event}</div>` : "";
+
+                calendarEl.innerHTML += `
+                    <div class="day" onclick="openModal('${dateKey}', '${year}年${month + 1}月${i}日')">
+                        <div class="${dateClass}">${i}</div>
+                        ${shiftHtml}
+                        ${eventHtml}
+                    </div>
+                `;
+            }
+        }
+
+        function changeMonth(step) {
+            currentDate.setMonth(currentDate.getMonth() + step);
+            renderCalendar();
+        }
+
+        function openModal(dateKey, displayDate) {
+            selectedDateString = dateKey;
+            document.getElementById('modalTitle').innerText = displayDate;
+            const data = calendarData[dateKey] || { shift: "", event: "" };
+            document.getElementById('shiftInput').value = data.shift;
+            document.getElementById('eventInput').value = data.event;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function saveData() {
+            const shift = document.getElementById('shiftInput').value.trim();
+            const event = document.getElementById('eventInput').value.trim();
+            
+            if (!shift && !event) {
+                delete calendarData[selectedDateString];
+            } else {
+                calendarData[selectedDateString] = { shift, event };
+            }
+            
+            localStorage.setItem('myCustomCalendar', JSON.stringify(calendarData));
+            closeModal();
+            renderCalendar();
+        }
+
+        // 初始化
+        renderCalendar();
+    </script>
+</body>
+</html>
