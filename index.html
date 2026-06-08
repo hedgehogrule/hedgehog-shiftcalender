@@ -27,7 +27,7 @@
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 0 8px; }
         
         .day { background: var(--card-bg); backdrop-filter: blur(3px); min-height: 100px; padding: 4px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s ease; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid rgba(255,255,255,0.4); box-sizing: border-box; }
-        .day:active { transform: scale(0.96); background: rgba(255, 255, 255, 1); }
+        .day:active { transform: scale(0.96); background: rgba(255,255,255,1); }
         .day.empty { background: transparent; box-shadow: none; border: none; cursor: default; }
         
         .date-number { font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-left: 2px; color: #666; display: flex; justify-content: space-between; align-items: center; }
@@ -37,6 +37,7 @@
         
         .week-badge { font-size: 9px; background: linear-gradient(135deg, #e0f7fa 0%, #e6d9ff 100%); color: #7a6baf; border: 1px solid #dcd0ff; border-radius: 6px; padding: 1px 3px; white-space: nowrap; font-weight: bold; }
         
+        /* --- 全新班表膠囊標籤樣式 --- */
         .shift-badge {
             font-size: 11px;
             font-weight: bold;
@@ -51,9 +52,13 @@
             text-overflow: ellipsis;
             box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         }
+        /* OFF 班別：夢幻紫 */
         .shift-off { background: #b6a4e3; color: white; border: none; border-radius: 14px; box-shadow: 0 2px 4px rgba(182, 164, 227, 0.4); max-width: fit-content; padding: 2px 9px; }
+        /* D 開頭：以白色為主、細緻灰框 */
         .shift-d { background: #ffffff; color: #444444; border: 1px solid #ccd0d5; border-radius: 8px; }
+        /* 12、E、N 開頭：顯眼夢幻綠色 */
         .shift-green { background: #5ece9d; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(94, 206, 157, 0.3); }
+        /* 其他班別（如 8-4 1）：輕灰色標籤 */
         .shift-default { background: #e9ecef; color: #555555; border: 1px solid #dee2e6; border-radius: 8px; }
         
         .event-item { font-size: 11px; background: rgba(91, 155, 213, 0.1); border-left: 3px solid #84bde3; padding: 3px 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #3e6e96; border-radius: 0 4px 4px 0; }
@@ -101,9 +106,8 @@
                 <input type="text" id="shiftInput" placeholder="輸入或點選下方按鈕">
                 <div class="quick-options">
                     <button class="quick-btn" onclick="setShift('D')">D</button>
-                    <button class="quick-btn" onclick="setShift('D1')">D1</button>
-                    <button class="quick-btn" onclick="setShift('D2')">D2</button>
                     <button class="quick-btn" onclick="setShift('12-8 1')">12-8 1</button>
+                    <button class="quick-btn" onclick="setShift('8-4 1')">8-4 1</button>
                     <button class="quick-btn" onclick="setShift('N1')">N1</button>
                     <button class="quick-btn" onclick="setShift('E1')">E1</button>
                     <button class="quick-btn quick-btn-off" onclick="setShift('OFF')">OFF</button>
@@ -122,35 +126,34 @@
     </div>
 
     <script>
-        // --- 41週班表資料庫 (已將 8-4 1 改為 D1，8-4 2 改為 D2) ---
         const shiftPatterns = [
-            ["D2", "D", "8'-16' 5", "D", "D7", "OFF", "N2"],     // 01
+            ["8-4 2", "D", "8'-16' 5", "D", "D7", "OFF", "N2"],     // 01
             ["N1", "N2", "OFF", "OFF", "N2", "N1", "OFF"],          // 02
             ["E3", "E3", "E3", "E3", "E3", "OFF", "E1"],            // 03
             ["E4", "E4", "E4", "E4", "E4", "OFF", "OFF"],           // 04
-            ["D10", "D8", "D2", "D", "D4", "D1", "OFF"],         // 05
+            ["D10", "D8", "8-4 2", "D", "D4", "D1", "OFF"],         // 05
             ["E1", "E1", "E1", "E1", "E1", "OFF", "N1"],            // 06
             ["N2", "N1", "N1", "N2", "OFF", "OFF", "OFF"],          // 07
             ["D4", "D6", "D", "D10", "D3", "OFF", "OFF"],           // 08
             ["E2", "E2", "E2", "E2", "E2", "E2", "OFF"],            // 09
-            ["8'-16' 5", "D", "D6", "D2", "DB1", "D2", "OFF"],   // 10
-            ["DB1", "D7", "D1", "D8", "8'-16' 5", "OFF", "OFF"], // 11
+            ["8'-16' 5", "D", "D6", "8-4 2", "DB1", "D2", "OFF"],   // 10
+            ["DB1", "D7", "8-4 1", "D8", "8'-16' 5", "OFF", "OFF"], // 11
             ["D3", "DB1", "N2", "N1", "N1", "N2", "OFF"],           // 12
-            ["OFF", "D10", "D3", "D7", "D1", "OFF", "OFF"],      // 13
+            ["OFF", "D10", "D3", "D7", "8-4 1", "OFF", "OFF"],      // 13
             ["12-8 1", "12-8 2", "12-8 3", "12-8 4", "12-8 5", "OFF", "E2"], // 14
             ["12-8 2", "12-8 3", "12-8 4", "12-8 5", "12-8 1", "OFF", "OFF"],// 15
-            ["D7", "D4", "D9", "DB1", "D2", "OFF", "D2"],        // 16
-            ["D", "D3", "D10", "D1", "D9", "OFF", "OFF"],        // 17
+            ["D7", "D4", "D9", "DB1", "8-4 2", "OFF", "D2"],        // 16
+            ["D", "D3", "D10", "8-4 1", "D9", "OFF", "OFF"],        // 17
             ["12-8 3", "12-8 4", "12-8 5", "12-8 1", "12-8 2", "E1", "OFF"], // 18
             ["12-8 4", "12-8 5", "12-8 1", "12-8 2", "12-8 3", "OFF", "OFF"],// 19
-            ["D1", "D9", "D4", "D9", "D6", "9-5訪", "OFF"],      // 20
+            ["8-4 1", "D9", "D4", "D9", "D6", "9-5訪", "OFF"],      // 20
             ["D9", "D", "DB1", "D6", "D8", "OFF", "D1"],            // 21
             ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 22
             ["OFF", "OFF", "OFF", "OFF", "OFF", "OFF", "OFF"],      // 23
             ["D'OFF", "D", "D", "D", "D", "OFF", "OFF"],            // 24
             ["12-8 5", "12-8 1", "12-8 2", "12-8 3", "12-8 4", "OFF", "OFF"],// 25
-            ["D8", "D2", "D7", "D4", "D", "OFF.B", "OFF"],       // 26
-            ["D6", "D1", "D8", "D3", "D10", "D3", "OFF"],        // 27
+            ["D8", "8-4 2", "D7", "D4", "D", "OFF.B", "OFF"],       // 26
+            ["D6", "8-4 1", "D8", "D3", "D10", "D3", "OFF"],        // 27
             ["D", "8'-16' 5", "D", "8'-16' 5", "D", "OFF", "OFF"],  // 28
             ["D11", "D11", "D11", "D11", "D11", "OFF", "9-5訪"],    // 29
             ["D", "D", "D", "D", "D", "OFF", "OFF"],                // 30
@@ -232,6 +235,7 @@
                     finalShift = autoInfo.shift;
                 }
                 
+                // --- 核心邏輯：根據班別前綴自動歸類標籤顏色 ---
                 let shiftHtml = "";
                 if (finalShift) {
                     const s = finalShift.trim().toUpperCase();
